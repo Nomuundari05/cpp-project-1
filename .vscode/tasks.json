@@ -1,0 +1,38 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "build",
+        "type": "shell",
+        "command": "g++",
+        "args": [
+          "-g",
+          "${workspaceFolder}/src/main.cpp",
+          "-o",
+          "${workspaceFolder}/src/main"
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": true  // This makes it the default build task
+        },
+        "problemMatcher": ["$gcc"],
+        "detail": "Generated task for building C++ files"
+      },
+      {
+        "label": "build and run",
+        "type": "shell",
+        "command": "g++",
+        "args": [
+          "-g",
+          "${workspaceFolder}/src/main.cpp",
+          "-o",
+          "${workspaceFolder}/src/main",
+          "&&",
+          "${workspaceFolder}/src/main"
+        ],
+        "group": "none",  // This task is not part of the build group
+        "problemMatcher": ["$gcc"],
+        "detail": "Build and run the C++ program"
+      }
+    ]
+  }
