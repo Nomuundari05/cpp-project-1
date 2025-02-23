@@ -4,12 +4,11 @@
         {
             "label": "build",
             "type": "shell",
-            "command": "g++",
+            "command": "make",
             "args": [
-                "-g",
-                "${workspaceFolder}/src/main.cpp",
-                "-o",
-                "${workspaceFolder}/src/main"
+                "clean",
+                "all",
+                "run"
             ],
             "group": "build",
             "problemMatcher": [
@@ -22,12 +21,9 @@
             "type": "shell",
             "command": "g++",
             "args": [
-                "-g",
-                "${workspaceFolder}/src/main.cpp",
-                "-o",
-                "${workspaceFolder}/src/main",
-                "&&",
-                "${workspaceFolder}/src/main"
+                "clean",
+                "all",
+                "run"
             ],
             "group": "none",
             "problemMatcher": [

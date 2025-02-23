@@ -1,33 +1,41 @@
-#ifndef LONGNUM_HPP
-#define LONGNUM_HPP
+#ifndef LONGNUMBER_HPP
+#define LONGNUMBER_HPP
 
-#include<iostream>
-#include<vector>
+#include <vector>
+#include <string>
 
-class Longnumber{
-    std::vector<int>binary_digits;
-    int precision;
+class LongNumber {
+
 public:
+    std::vector<int> integer_digits; 
+    std::vector<int> fractional_digits; 
+    int precision; 
+    bool is_negative;
     LongNumber();
-    LongNumber(const LongNumber& other); // copy constructor
+    LongNumber(const LongNumber& other); // Copy constructor
     ~LongNumber();
 
     LongNumber& operator=(const LongNumber& other);
+
+    // Arithmetic operators
     LongNumber operator+(const LongNumber& other) const;
     LongNumber operator-(const LongNumber& other) const;
     LongNumber operator*(const LongNumber& other) const;
-    LongNumber operator/(const LongNumber& other) const;
+    //LongNumber operator/(const LongNumber& other) const;
 
     bool operator==(const LongNumber& other) const;
     bool operator!=(const LongNumber& other) const;
     bool operator<(const LongNumber& other) const;
     bool operator>(const LongNumber& other) const;
 
-    void SettingPrecision(int bits)
-    friend LongNumber operator""_longnum(long double number);
+    static LongNumber make_number(long double number, int desired_precision);
 
-    void print();
+    std::string to_string() const; 
+    void print() const;
 
+    void align_parts(const LongNumber& other, LongNumber& result) const;
+    void normalize();
+    LongNumber absolute_value() const;
 };
-#endif
 
+#endif
