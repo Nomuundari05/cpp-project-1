@@ -6,58 +6,50 @@
 LongNumber::LongNumber() : precision(0), is_negative(false) {}
 
 LongNumber::LongNumber(const LongNumber& other)
-    : integer_digits(other.integer_digits), fractional_digits(other.fractional_digits),
+    : int_part(other.int_part), frac_part(other.frac_part),
       precision(other.precision), is_negative(other.is_negative) {}
 
 LongNumber::~LongNumber() {}
 
 LongNumber& LongNumber::operator=(const LongNumber& other) {
     if (this != &other) {
-        integer_digits = other.integer_digits;
-        fractional_digits = other.fractional_digits;
+        int_part = other.int_part;
+        frac_part = other.frac_part;
         precision = other.precision;
         is_negative = other.is_negative;
     }
     return *this;
 }
 
-//Function for making numbers have the same structure
-void LongNumber::align_parts(const LongNumber& other, LongNumber& result) const {
+
+void LongNumber::align_parts(const LongNumber& other, LongNumber& result) const { // Function for making 2 numbers have the same size before +,-
+    
     result.precision = std::max(precision, other.precision);
+    result.frac_part = frac_part;                                            // Align fractional parts
+    result.frac_part.resize(result.precision, 0);                        // add 0 in the rightmost 
 
-    // Align fractional parts
-    result.fractional_digits = fractional_digits;
-    result.fractional_digits.resize(result.precision, 0); // Pad with zeros if necessary
-
-
-    // Align integer parts
-    size_t max_integer_size = std::max(integer_digits.size(), other.integer_digits.size());
-    result.integer_digits = integer_digits;
-    result.integer_digits.insert(result.integer_digits.begin(), max_integer_size - integer_digits.size(), 0); //pads with 0 in the front
-
+    size_t max_int_part_size = std::max(int_part.size(), other.int_part.size()); // Align integer parts
+    result.int_part = int_part;
+    result.int_part.insert(result.int_part.begin(), max_int_part_size - int_part.size(), 0); //pads with 0 in the front
 }
 
-// Function for removing unnecessary zeros and digts
-void LongNumber::normalize() {
-    // Remove leading 0
-    while (integer_digits.size() > 1 && integer_digits[0] == 0) {
-        integer_digits.erase(integer_digits.begin());
+
+void LongNumber::normalize() {                              // Function for removing unnecessary zeros and digits
+
+    while (int_part.size() > 1 && int_part[0] == 0) {                  // Remove leading 0
+        int_part.erase(int_part.begin());
     }
 
-    // Remove trailing 0
-    while (!fractional_digits.empty() && fractional_digits.back() == 0) {
-        fractional_digits.pop_back();
+    while (!frac_part.empty() && frac_part.back() == 0) {     // Remove trailing 0
+        frac_part.pop_back();
     }
 
-    // If integer part is empty, set it to 0
-    if (integer_digits.empty()) {
-        integer_digits.push_back(0);
+    if (int_part.empty()) {                                      // If integer part is empty, set it to 0
+        int_part.push_back(0);
     }
-
-    precision = fractional_digits.size();
+    precision = frac_part.size();
 }
 
-//Function for taking the absolute value
 LongNumber LongNumber::absolute_value() const {
     LongNumber result = *this; 
     result.is_negative = false;
@@ -67,249 +59,233 @@ LongNumber LongNumber::absolute_value() const {
 LongNumber LongNumber::operator+(const LongNumber& other) const {
     LongNumber result;
 
-    // If both numbers are negative
-    if (is_negative && other.is_negative) {
+    if (is_negative && other.is_negative) {                   // If both numbers are negative
         result = absolute_value() + other.absolute_value();
         result.is_negative = true;
         return result;
     } 
-    // One negative, one positive
-    else if (is_negative != other.is_negative) {
-        return is_negative ? other - absolute_value() : *this - other.absolute_value();
+    else if (is_negative != other.is_negative) {                  // One negative, one positive
+        if (is_negative) {
+            return other - absolute_value();
+        } else {
+            return *this - other.absolute_value();
+        }
     }
 
-    // Align both numbers
-    LongNumber aligned_this = *this;
+    LongNumber aligned_this = *this;                 
     LongNumber aligned_other = other;
-    align_parts(aligned_other, aligned_this);
+
+    align_parts(aligned_other, aligned_this);                      // Align both numbers
     aligned_other.align_parts(*this, aligned_other);
 
     int carry = 0;
-    int frac_size = aligned_this.fractional_digits.size(); 
+    int frac_part_size = aligned_this.frac_part.size(); 
 
-    // Add fractional digits
-    result.fractional_digits.resize(frac_size);
-    for (int i = frac_size - 1; i >= 0; --i) {
-        int sum = aligned_this.fractional_digits[i] + aligned_other.fractional_digits[i] + carry;
-        result.fractional_digits[i] = sum % 2;
+    result.frac_part.resize(frac_part_size);                          // Add fractional digits
+    for (int i = frac_part_size - 1; i >= 0; --i) {
+        int sum = aligned_this.frac_part[i] + aligned_other.frac_part[i] + carry;
+        result.frac_part[i] = sum % 2;
         carry = sum / 2;
     }
 
-    // Add integer digits
-    int int_size = aligned_this.integer_digits.size(); 
-    result.integer_digits.resize(int_size);
-    for (int i = int_size - 1; i >= 0; --i) {
-        int sum = aligned_this.integer_digits[i] + aligned_other.integer_digits[i] + carry;
-        result.integer_digits[i] = sum % 2;
+    int int_part_size = aligned_this.int_part.size(); 
+    result.int_part.resize(int_part_size);                                 // Add integer digits
+    for (int i = int_part_size - 1; i >= 0; --i) {
+        int sum = aligned_this.int_part[i] + aligned_other.int_part[i] + carry;
+        result.int_part[i] = sum % 2;
         carry = sum / 2;
     }
 
-    if (carry) {
-        result.integer_digits.insert(result.integer_digits.begin(), carry);
+    if (carry) {                                    // Handle remaining carry
+        result.int_part.insert(result.int_part.begin(), carry);
     }
 
     result.normalize();
     return result;
 }
-
 LongNumber LongNumber::operator-(const LongNumber& other) const {
     LongNumber result;
 
-    if (is_negative && other.is_negative) {
+    if (is_negative && other.is_negative) {                     // If both numbers are negative
         if (absolute_value() > other.absolute_value()) { 
             result = absolute_value() - other.absolute_value();
             result.is_negative = true;
-        } else {
+        } else {                                                
             result = other.absolute_value() - absolute_value();
             result.is_negative = false;
         }
         return result;
     } 
     
-    if (is_negative != other.is_negative) {
+    if (is_negative != other.is_negative) {                     // One negative, one positive
         result = absolute_value() + other.absolute_value();
         result.is_negative = is_negative;
         return result;
     }
 
-    // Align the parts
-    LongNumber aligned_this = *this;
+    LongNumber aligned_this = *this;                           // Align the parts
     LongNumber aligned_other = other;
     align_parts(aligned_other, aligned_this);
     aligned_other.align_parts(*this, aligned_other);
 
-    // Subtract fractional digits
     int borrow = 0;
-    int frac_size = aligned_this.fractional_digits.size();
-    result.fractional_digits.resize(frac_size);
-    for (int i = frac_size - 1; i >= 0; --i) {
-        int diff = aligned_this.fractional_digits[i] - aligned_other.fractional_digits[i] - borrow;
+    int frac_part_size = aligned_this.frac_part.size();
+    result.frac_part.resize(frac_part_size);                              // Subtract fractional digits
+    for (int i = frac_part_size - 1; i >= 0; --i) {
+        int diff = aligned_this.frac_part[i] - aligned_other.frac_part[i] - borrow;
         if (diff < 0) {
-            diff += 2; // Adjust for binary subtraction
+            diff += 2;                                         // Adjust for binary subtraction
             borrow = 1;
         } else {
             borrow = 0;
         }
-        result.fractional_digits[i] = diff;
+        result.frac_part[i] = diff;
     }
 
-    // Subtract integer digits
-    int int_size = aligned_this.integer_digits.size(); 
-    result.integer_digits.resize(int_size);
-    for (int i = int_size - 1; i >= 0; --i) {
-        int diff = aligned_this.integer_digits[i] - aligned_other.integer_digits[i] - borrow;
+    int int_part_size = aligned_this.int_part.size(); 
+    result.int_part.resize(int_part_size);                               // Subtract integer digits
+    for (int i = int_part_size - 1; i >= 0; --i) {
+        int diff = aligned_this.int_part[i] - aligned_other.int_part[i] - borrow;
         if (diff < 0) {
-            diff += 2; 
+            diff += 2;                                         // Adjust for binary subtraction
             borrow = 1;
         } else {
             borrow = 0;
         }
-        result.integer_digits[i] = diff;
+        result.int_part[i] = diff;
     }
 
-
-    if (borrow) {
-        // swap and then negate 
+    if (borrow) {                                              // Handle borrow by swapping and negating
         result = other - *this;
         result.is_negative = true;
     } else {
-        result.normalize();
+        result.normalize();                                    // Normalize the result
     }
 
     return result;
 }
 LongNumber LongNumber::operator*(const LongNumber& other) const {
     LongNumber result;
-    result.is_negative = (is_negative != other.is_negative);
+    result.is_negative = (is_negative != other.is_negative);        // Result is negative if signs differ
+
 
     LongNumber abs_this = absolute_value();
     LongNumber abs_other = other.absolute_value();
 
-    //size of the merged number
-    size_t total_size_this = abs_this.integer_digits.size() + abs_this.fractional_digits.size();
-    size_t total_size_other = abs_other.integer_digits.size() + abs_other.fractional_digits.size();
+    size_t total_digits_this = abs_this.int_part.size() + abs_this.frac_part.size();
+    size_t total_digits_other = abs_other.int_part.size() + abs_other.frac_part.size();
 
-    // Initialize product vector
-    std::vector<int> product(total_size_this + total_size_other, 0);
+    std::vector<int> result_digits(total_digits_this + total_digits_other, 0); //initialize the product as a vector
 
-    //multiplication
-    for (size_t i = 0; i < total_size_this; ++i) {
-        int digit1;
-        if (i < abs_this.integer_digits.size()) {
-            digit1 = abs_this.integer_digits[i];
+
+    for (size_t i = 0; i < total_digits_this; ++i) {
+        int current_digit_this;
+        if (i < abs_this.int_part.size()) {
+            current_digit_this = abs_this.int_part[i]; // Integer part digit
         } else {
-            digit1 = abs_this.fractional_digits[i - abs_this.integer_digits.size()];
+            current_digit_this = abs_this.frac_part[i - abs_this.int_part.size()]; // Fractional part digit
         }
     
-        for (size_t j = 0; j < total_size_other; ++j) {
-            int digit2;
-            if (j < abs_other.integer_digits.size()) {
-                digit2 = abs_other.integer_digits[j];
+        for (size_t j = 0; j < total_digits_other; ++j) {
+            int current_digit_other;
+            if (j < abs_other.int_part.size()) {
+                current_digit_other = abs_other.int_part[j]; // Integer part digit
             } else {
-                digit2 = abs_other.fractional_digits[j - abs_other.integer_digits.size()];
+                current_digit_other = abs_other.frac_part[j - abs_other.int_part.size()]; // Fractional part digit
             }
     
-            int mul = digit1 * digit2;
-            product[i + j + 1] += mul;
-            product[i + j] += product[i + j + 1] / 2;
-            product[i + j + 1] %= 2;
+            int product = current_digit_this * current_digit_other; // Multiply the digits and adto the result
+
+            result_digits[i + j + 1] += product;                     // Add to the next position
+            result_digits[i + j] += result_digits[i + j + 1] / 2;            // Handle carry
+            result_digits[i + j + 1] %= 2;                                     // Keep only the remainder
         }
     }
-    // position of the binary point
-    size_t binary_point_position = abs_this.fractional_digits.size() + abs_other.fractional_digits.size();
 
-    // Split the product into integer and fractional parts
-    result.integer_digits.assign(product.begin(), product.begin() + product.size() - binary_point_position);
-    result.fractional_digits.assign(product.begin() + product.size() - binary_point_position, product.end());
+    size_t binary_point_position = abs_this.frac_part.size() + abs_other.frac_part.size();
+
+    result.int_part.assign(result_digits.begin(), result_digits.begin() + result_digits.size() - binary_point_position); //Split the result into int_part and frac_part
+    result.frac_part.assign(result_digits.begin() + result_digits.size() - binary_point_position, result_digits.end()); 
 
     result.precision = std::max(abs_this.precision, abs_other.precision);
 
     result.normalize();
-
     return result;
+
 }
 
 bool LongNumber::operator==(const LongNumber& other) const {
     LongNumber diff = *this - other;
     diff.is_negative = false;
-    LongNumber eps = LongNumber::make_number(0.000001, 64); // Adjustable tolerance
+    LongNumber eps = LongNumber::Longnum(0.000001, 64);         // Adjustable tolerance
     return diff < eps;
 }
-bool LongNumber::operator!=(const LongNumber& other) const {
 
+bool LongNumber::operator!=(const LongNumber& other) const {
     return !(*this == other);
 }
+
 bool LongNumber::operator<(const LongNumber& other) const {
     if (is_negative != other.is_negative) {
-        return is_negative; // Negative numbers are always smaller
+        return is_negative;             // Negative numbers are always smaller
     }
 
-    // Align both numbers before comparison
     LongNumber aligned_this, aligned_other;
     align_parts(other, aligned_this);
     other.align_parts(*this, aligned_other);
 
-    // Compare integer part sizes first
-    if (aligned_this.integer_digits.size() != aligned_other.integer_digits.size()) {
-        return (aligned_this.integer_digits.size() < aligned_other.integer_digits.size()) ^ is_negative;
+    if (aligned_this.int_part.size() != aligned_other.int_part.size()) {           // Compare integer part sizes first
+        return (aligned_this.int_part.size() < aligned_other.int_part.size()) ^ is_negative;
     }
 
-    // Compare integer parts
-    if (aligned_this.integer_digits != aligned_other.integer_digits) {
-        return (aligned_this.integer_digits < aligned_other.integer_digits) ^ is_negative;
+    if (aligned_this.int_part != aligned_other.int_part) {                         // Compare integer parts
+        return (aligned_this.int_part < aligned_other.int_part) ^ is_negative;
     }
 
-    // Compare fractional parts directly (
-    return (aligned_this.fractional_digits < aligned_other.fractional_digits) ^ is_negative;
+
+    return (aligned_this.frac_part < aligned_other.frac_part) ^ is_negative;           // Compare fractional parts directly
 }
-
-
 
 bool LongNumber::operator>(const LongNumber& other) const {
     if (is_negative != other.is_negative) {
-        return other.is_negative; // A positive number is always greater than a negative number
+        return other.is_negative;                              // positive number is always greater than a negative number
     }
 
-    // Align both numbers before comparison
-    LongNumber aligned_this, aligned_other;
+    LongNumber aligned_this, aligned_other;                  // Align both numbers before comparison
     align_parts(other, aligned_this);
     other.align_parts(*this, aligned_other);
 
-    if (aligned_this.integer_digits.size() != aligned_other.integer_digits.size()) {
-        return (aligned_this.integer_digits.size() > aligned_other.integer_digits.size()) ^ is_negative;
+    if (aligned_this.int_part.size() != aligned_other.int_part.size()) {
+        return (aligned_this.int_part.size() > aligned_other.int_part.size()) ^ is_negative;
     }
 
-    // Compare integer parts
-    if (aligned_this.integer_digits != aligned_other.integer_digits) {
-        return (aligned_this.integer_digits > aligned_other.integer_digits) ^ is_negative;
+    if (aligned_this.int_part != aligned_other.int_part) {              // Compare integer parts
+        return (aligned_this.int_part > aligned_other.int_part) ^ is_negative;
     }
 
-    // Compare fractional parts
-    return (aligned_this.fractional_digits > aligned_other.fractional_digits) ^ is_negative;
+    return (aligned_this.frac_part > aligned_other.frac_part) ^ is_negative; // Compare fractional parts
 }
-
 
 std::string LongNumber::to_string() const {
     std::string result;
 
-    if (integer_digits.empty() && fractional_digits.empty()) {
+    if (int_part.empty() && frac_part.empty()) {                      // If both parts are empty, return "0"
         return "0";
     }
-    if (is_negative) result += "-";
+    if (is_negative) result += "-";                       // Add negative sign if needed
 
-    // Remove leading zeros from integer part
-    size_t start = 0;
-    while (start < integer_digits.size() - 1 && integer_digits[start] == 0) {
+    size_t start = 0;                                 // Remove leading zeros from integer part
+    while (start < int_part.size() - 1 && int_part[start] == 0) {
         start++;
     }
 
-    for (size_t i = start; i < integer_digits.size(); i++) {
-        result += std::to_string(integer_digits[i]);
+    for (size_t i = start; i < int_part.size(); i++) {      // Convert integer part to string
+        result += std::to_string(int_part[i]);
     }
 
-    if (!fractional_digits.empty()) {
+    if (!frac_part.empty()) {                           // Add fractional part if it exists
         result += ".";
-        for (int digit : fractional_digits) {
+        for (int digit : frac_part) {
             result += std::to_string(digit);
         }
     }
@@ -317,35 +293,32 @@ std::string LongNumber::to_string() const {
     return result;
 }
 
-void LongNumber::print() const {
-    std::cout << to_string() << std::endl;
+void LongNumber::print() const {               ///print
+    std::cout << to_string() << std::endl;      
 }
 
-
-
-LongNumber LongNumber::make_number(long double number, int desired_precision) {
+LongNumber LongNumber::Longnum(long double number, int desired_precision) {
     LongNumber result;
-    result.is_negative = (number < 0);
+    result.is_negative = (number < 0);                 
     number = std::abs(number);
-    
+
     result.precision = desired_precision;
 
-    long long int_part = static_cast<long long>(number);
-    long double frac_part = number - int_part;
+    long long int_part = static_cast<long long>(number);      // Extract integer part
+    long double frac_part = number - int_part;                // Extract fractional part
 
-    if (int_part == 0) {
-        result.integer_digits.push_back(0);
+    if (int_part == 0) {                                     // Hif 0 int
+        result.int_part.push_back(0);
     } else {
-        while (int_part > 0) {
-            result.integer_digits.insert(result.integer_digits.begin(), int_part % 2);
+        while (int_part > 0) {                               // int_part to binary
+            result.int_part.insert(result.int_part.begin(), int_part % 2);
             int_part /= 2;
         }
     }
 
-
-    while (result.fractional_digits.size() < result.precision) {
+    while (result.frac_part.size() < result.precision) {          // Convert frac_part to binary
         frac_part *= 2;
-        result.fractional_digits.push_back(static_cast<int>(frac_part));
+        result.frac_part.push_back(static_cast<int>(frac_part));
         frac_part -= static_cast<int>(frac_part);
         if (frac_part < 0)
             frac_part = 0;

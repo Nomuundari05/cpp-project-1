@@ -7,8 +7,8 @@
 class LongNumber {
 
 public:
-    std::vector<int> integer_digits; 
-    std::vector<int> fractional_digits; 
+    std::vector<int> int_part; 
+    std::vector<int> frac_part; 
     int precision; 
     bool is_negative;
     LongNumber();
@@ -28,7 +28,7 @@ public:
     bool operator<(const LongNumber& other) const;
     bool operator>(const LongNumber& other) const;
 
-    static LongNumber make_number(long double number, int desired_precision);
+    static LongNumber Longnum(long double number, int desired_precision);
 
     std::string to_string() const; 
     void print() const;
